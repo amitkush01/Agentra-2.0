@@ -50,7 +50,7 @@ export async function POST(
       );
     }
 
-    const result = await agentVideoOperations.create(agentId, title, description || '', videoUrl, thumbnailUrl);
+    const result: any = await agentVideoOperations.create(agentId, title, description || '', videoUrl, thumbnailUrl);
 
     return NextResponse.json({
       success: true,

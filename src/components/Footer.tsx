@@ -46,8 +46,10 @@ export default function Footer({ isDarkMode, isHovering, setIsHovering, onAbout 
   };
 
   const socialLinks = [
-    { name: 'Twitter', icon: '𝕏', href: '#twitter' },
+    { name: 'Instagram', icon: '📸', href: 'https://instagram.com' },
+    { name: 'Facebook', icon: '📘', href: 'https://facebook.com' },
     { name: 'LinkedIn', icon: '💼', href: '#linkedin' },
+    { name: 'Twitter / X', icon: '𝕏', href: '#twitter' },
     { name: 'GitHub', icon: '🐙', href: '#github' },
     { name: 'Discord', icon: '💬', href: '#discord' }
   ];

@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Prevent webpack errors
-  webpack: (config, { isServer }) => {
-    // Fix for webpack runtime errors
+  webpack: (config, { isServer, dev }) => {
+    // Fix for webpack runtime fallback
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -10,20 +10,10 @@ const nextConfig = {
       tls: false,
     };
     
-    // Optimize bundle size
-    config.optimization = {
-      ...config.optimization,
-      splitChunks: {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-        },
-      },
-    };
+    // Disable filesystem caching in development to avoid chunk corruption
+    if (dev) {
+      config.cache = false;
+    }
     
     return config;
   },
@@ -50,19 +40,9 @@ const nextConfig = {
   
   // Prevent memory issues
   onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
-  
-  // Increase body size limit for large video uploads
-  serverRuntimeConfig: {
-    api: {
-      bodyParser: {
-        sizeLimit: '2gb',
-      },
-      responseLimit: false,
-    },
+    maxInactiveAge: 60 * 1000,
+    pagesBufferLength: 5,
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

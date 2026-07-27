@@ -81,15 +81,25 @@ export default function Header({
       <div className="max-w-7xl mx-auto flex items-center justify-between h-full px-6">
         {/* Left: Logo */}
         <div className="flex items-center">
-          <Link href="/">
-            <motion.span 
-              className={`font-black text-3xl ${textClass} tracking-tight bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent cursor-pointer`}
-              whileHover={{ scale: 1.05 }}
+          <Link href="/" className="flex items-center gap-3 group">
+            <img
+              src="/images/logo.png"
+              alt="Agentra Logo"
+              className="w-10 h-10 object-contain rounded-xl shadow-lg border border-yellow-500/40 group-hover:scale-105 transition"
+            />
+            <motion.div 
+              className="flex items-center gap-2 cursor-pointer"
+              whileHover={{ scale: 1.04 }}
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
-              Agentra
-            </motion.span>
+              <span className="font-black text-3xl sm:text-4xl tracking-wider uppercase bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(245,158,11,0.6)] font-sans">
+                AGENTRA
+              </span>
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-gradient-to-r from-yellow-400 via-orange-500 to-amber-500 text-slate-950 shadow-lg tracking-widest border border-yellow-300/50">
+                AI
+              </span>
+            </motion.div>
           </Link>
         </div>
         
@@ -98,7 +108,7 @@ export default function Header({
           {NAV_ITEMS.map((item, idx) => (
             <motion.button
               key={item.label}
-              className={`relative px-2 py-1 ${textClass} text-lg transition group`}
+              className={`relative px-3 py-1.5 ${textClass} font-semibold text-base transition group`}
               onClick={
                 item.label === 'Contact' ? onContact : 
                 item.label === 'About' ? onAbout : 

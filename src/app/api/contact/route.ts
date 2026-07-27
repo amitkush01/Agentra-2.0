@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { contactMessageOperations } from '@/lib/database';
+import { sendContactNotificationEmail, ADMIN_NOTIFICATION_EMAIL } from '@/lib/mailer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,13 +14,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to database
-    const result = await contactMessageOperations.create(name, email, company || '', message);
+    // 1. Save message to database
+    const result: any = await contactMessageOperations.create(name, email, company || '', message);
+
+    // 2. Dispatch email notification to admin Gmail (amitstm444@gmail.com)
+    await sendContactNotificationEmail({
+      name,
+      email,
+      company,
+      message
+    });
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Contact message sent successfully',
+        message: `Contact message sent successfully and notified to ${ADMIN_NOTIFICATION_EMAIL}`,
         id: result.id
       },
       { status: 201 }
@@ -44,4 +53,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}

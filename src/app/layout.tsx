@@ -5,6 +5,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LoginModalProvider } from '@/contexts/LoginModalContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import GlobalLoginModal from '@/components/GlobalLoginModal';
+import Background3D from '@/components/Background3D';
+import AIAssistant3D from '@/components/AIAssistant3D';
 
 const geistSans = Inter({
   variable: "--font-geist-sans",
@@ -17,8 +19,13 @@ const geistMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentra — The Smart AI Agents Platform",
-  description: "Transform your business with AI agents",
+  title: "Agentra — Autonomous AI Agents Platform",
+  description: "Transform your business with AI agents and interactive Maya Voice Assistant",
+  icons: {
+    icon: '/images/logo.png',
+    shortcut: '/images/logo.png',
+    apple: '/images/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -29,12 +36,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-white relative`}
       >
         <AuthProvider>
           <SettingsProvider>
             <LoginModalProvider>
-              {children}
+              <Background3D />
+              <div className="relative z-10">
+                {children}
+              </div>
+              <AIAssistant3D />
               <GlobalLoginModal />
             </LoginModalProvider>
           </SettingsProvider>

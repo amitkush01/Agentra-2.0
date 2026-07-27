@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Key and value are required' }, { status: 400 });
     }
 
-    const result = await siteSettingsOperations.set(key, value, description);
+    const result: any = await siteSettingsOperations.set(key, value, description);
     return NextResponse.json({ success: true, id: result.id });
   } catch (error) {
     console.error('Error updating setting:', error);

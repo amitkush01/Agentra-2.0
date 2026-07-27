@@ -9,30 +9,40 @@ export async function POST(request: NextRequest) {
     console.log('Test signup received:', { name, email, company, passwordLength: password?.length });
     
     // Check if database is accessible
-    const db = getDatabase();
+    const db = await getDatabase();
     console.log('Database connected successfully');
     
     // Check if users table exists
-    const tableExists = db.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='users'
-    `).get();
+    const tableExists = await new Promise((resolve, reject) => {
+      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     
     console.log('Users table exists:', !!tableExists);
     
     if (!tableExists) {
+      const tables = await new Promise((resolve, reject) => {
+        db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, rows) => {
+          if (err) reject(err); else resolve(rows);
+        });
+      });
       return NextResponse.json({
         error: 'Users table does not exist',
-        tables: db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
+        tables
       }, { status: 500 });
     }
     
     // Check table schema
-    const schema = db.prepare("PRAGMA table_info(users)").all();
+    const schema = await new Promise((resolve, reject) => {
+      db.all("PRAGMA table_info(users)", (err, rows) => {
+        if (err) reject(err); else resolve(rows);
+      });
+    });
     console.log('Users table schema:', schema);
     
     // Check if user already exists
-    const existingUser = userOperations.getByEmail(email);
+    const existingUser = await userOperations.getByEmail(email);
     console.log('Existing user check:', existingUser ? 'User exists' : 'No existing user');
     
     if (existingUser) {
@@ -47,10 +57,10 @@ export async function POST(request: NextRequest) {
     
     // Try to create user
     console.log('Attempting to create user...');
-    const result = userOperations.create(email, name, hashedPassword, company);
+    const result: any = await userOperations.create(email, name, hashedPassword, company);
     console.log('User creation result:', result);
     
-    if (!result.lastInsertRowid) {
+    if (!result.id) {
       return NextResponse.json({
         error: 'Failed to create user - no ID returned',
         result
@@ -58,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get the created user
-    const newUser = userOperations.getById(result.lastInsertRowid as number);
+    const newUser: any = await userOperations.getById(result.id);
     console.log('Retrieved new user:', newUser);
     
     if (!newUser) {
@@ -83,4 +93,4 @@ export async function POST(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
-} 
+}

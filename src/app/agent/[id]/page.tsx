@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { useParams } from 'next/navigation';
+import Background3D from '@/components/Background3D';
 
 interface AIAgent {
   id: string;
@@ -117,7 +118,8 @@ export default function AgentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white">
+    <div className="min-h-screen bg-[#0D0D0D] text-white relative overflow-hidden">
+      <Background3D />
       {/* Header */}
       <header className="bg-[#0D0D0D]/95 backdrop-blur-sm border-b border-[#333] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -222,13 +224,17 @@ export default function AgentDetailPage() {
             <div className="text-center">
               <h3 className="text-2xl font-bold text-[#00FFB2] mb-4">{agent.videoTitle}</h3>
               <p className="text-[#B0B0B0] mb-6">{agent.videoDescription}</p>
-              <div className="w-full h-64 bg-[#0D0D0D] border border-[#333] rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-[#00BFFF] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">▶️</span>
-                  </div>
-                  <p className="text-[#B0B0B0]">Video Demo Coming Soon</p>
-                </div>
+              <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-yellow-500/30">
+                <video
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                >
+                  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
+                </video>
               </div>
             </div>
           </Card>

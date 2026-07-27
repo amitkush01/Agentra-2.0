@@ -3,7 +3,7 @@ import { userOperations } from '@/lib/database';
 
 export async function GET() {
   try {
-    const users = userOperations.getAll();
+    const users = await userOperations.getAll();
     return NextResponse.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -25,10 +25,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = userOperations.create(email, name, company);
+    const result: any = await userOperations.create(email, name, undefined, company);
     return NextResponse.json({ 
       message: 'User created successfully',
-      userId: result.lastInsertRowid 
+      userId: result.id 
     });
   } catch (error) {
     console.error('Error creating user:', error);

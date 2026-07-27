@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Create user
     console.log('Attempting to create user with:', { email, name, company, hashedPasswordLength: hashedPassword?.length });
-    const result = await userOperations.create(email, name, hashedPassword, company);
+    const result: any = await userOperations.create(email, name, hashedPassword, company);
 
     console.log('Signup result:', result);
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the created user
-    const newUser = await userOperations.getById(result.id);
+    const newUser: any = await userOperations.getById(result.id);
     
     console.log('Retrieved user:', newUser);
     

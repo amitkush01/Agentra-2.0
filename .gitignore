@@ -49,11 +49,11 @@ uploads/
 *.mp4
 *.mov
 *.avi
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.webp
+
+# Allow project branding and 3D images
+!public/images/*
+!src/app/icon.png
+!src/app/apple-icon.png
 
 # Environment variables
 .env

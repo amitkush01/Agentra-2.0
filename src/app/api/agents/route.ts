@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // For now, use a default user ID (1) - in a real app, this would come from authentication
     const userId = 1;
     
-    const result = await agentOperations.create(userId, name, type, description, config, photoUrl, keyValue, features);
+    const result: any = await agentOperations.create(userId, name, type, description, config, photoUrl, keyValue, features);
 
     const newAgent = {
       id: result.id,

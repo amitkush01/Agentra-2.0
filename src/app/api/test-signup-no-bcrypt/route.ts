@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = userOperations.getByEmail(email);
+    const existingUser = await userOperations.getByEmail(email);
     if (existingUser) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
@@ -43,16 +43,16 @@ export async function POST(request: NextRequest) {
 
     // Create user without hashing password (for testing)
     console.log('Attempting to create user without bcrypt...');
-    const result = userOperations.create(email, name, password, company);
+    const result: any = await userOperations.create(email, name, password, company);
     
     console.log('Signup result without bcrypt:', result);
     
-    if (!result.lastInsertRowid) {
+    if (!result.id) {
       throw new Error('Failed to create user - no ID returned');
     }
 
     // Get the created user
-    const newUser = userOperations.getById(result.lastInsertRowid as number);
+    const newUser: any = await userOperations.getById(result.id);
     
     if (!newUser) {
       throw new Error('Failed to retrieve created user');
@@ -77,4 +77,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

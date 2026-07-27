@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new subscription
-    const result = await subscriptionOperations.create(email);
+    const result: any = await subscriptionOperations.create(email);
 
     return NextResponse.json({
       success: true,

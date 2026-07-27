@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getDatabase, agentVideoOperations } from '@/lib/database';
 
 export async function GET() {
   try {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await agentVideoOperations.create(agent_id, title, description || '', video_url, thumbnail_url);
+    const result: any = await agentVideoOperations.create(agent_id, title, description || '', video_url, thumbnail_url);
 
     return NextResponse.json({
       success: true,

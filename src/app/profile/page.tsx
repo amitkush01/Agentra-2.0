@@ -4,29 +4,58 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLoginModal } from '@/contexts/LoginModalContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import FloatingCursor from '@/components/FloatingCursor';
+
+interface ChatHistoryItem {
+  id: string;
+  agentName: string;
+  message: string;
+  response: string;
+  date: string;
+}
 
 export default function ProfilePage() {
   const { user, updateProfile, logout } = useAuth();
-  const { openLoginModal } = useLoginModal();
   const router = useRouter();
   
+  const [activeTab, setActiveTab] = useState<'profile' | 'chats' | 'voice'>('profile');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Voice Settings State
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
+  const [voicePitch, setVoicePitch] = useState(1.2);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+
+  // Mocked/Saved Chat History
+  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([
+    {
+      id: 'log-1',
+      agentName: 'Maya 3D Assistant',
+      message: 'Can you help me design an automated marketing agent?',
+      response: 'Absolutely! Our Marketing Agent automates multi-channel campaign management, lead scoring, and content distribution 24/7.',
+      date: 'Today, 01:15 AM'
+    },
+    {
+      id: 'log-2',
+      agentName: 'Sales Specialist Agent',
+      message: 'What is the average response time for sales inquiries?',
+      response: 'Sales AI agent responds instantly within 300ms, qualifying leads and setting up calendar meetings automatically.',
+      date: 'Yesterday, 04:30 PM'
+    }
+  ]);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
     setName(user.name || '');
     setCompany(user.company || '');
   }, [user, router]);
@@ -47,7 +76,6 @@ export default function ProfilePage() {
     
     if (result.success) {
       setSuccess('Profile updated successfully!');
-      setIsEditing(false);
       setTimeout(() => setSuccess(''), 3000);
     } else {
       setError(result.error || 'Failed to update profile');
@@ -61,265 +89,327 @@ export default function ProfilePage() {
     router.push('/');
   };
 
-  if (!user) {
-    return null; // Will redirect to login
-  }
+  // Play audio sound for a chat history response
+  const playSound = (text: string, id: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+
+    if (speakingId === id) {
+      setSpeakingId(null);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = voiceSpeed;
+    utterance.pitch = voicePitch;
+
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Zira') || v.lang.startsWith('en'));
+    if (femaleVoice) utterance.voice = femaleVoice;
+
+    utterance.onstart = () => setSpeakingId(id);
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  if (!user) return null;
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800' : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-100'}`}>
-      {/* Floating Cursor */}
+    <div className={`min-h-screen ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} relative overflow-hidden`}>
       <FloatingCursor isDarkMode={isDarkMode} />
       
-      {/* Header */}
-      <div className={`${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-yellow-200'} backdrop-blur-md shadow-sm border-b`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <Link href="/" className="text-3xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-              Agentra
+      {/* 3D Ambient Lighting */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-yellow-500/10 via-orange-500/10 to-red-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+      {/* Navigation Header */}
+      <div className="border-b border-yellow-500/30 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center gap-3">
+              <img src="/images/logo.png" alt="Agentra Logo" className="w-9 h-9 object-contain rounded-xl border border-yellow-500/40 shadow-lg" />
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-2xl tracking-wider uppercase bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+                  AGENTRA
+                </span>
+                <span className="px-2 py-0.5 text-[9px] font-black rounded-md bg-gradient-to-r from-yellow-400 to-orange-500 text-slate-950 tracking-widest border border-yellow-300/40">
+                  AI
+                </span>
+              </div>
             </Link>
-            <div className="flex items-center space-x-4">
-              <Link href="/" className={`${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'} font-medium`}>
-                Home
-              </Link>
-              <button
-                onClick={handleLogout}
-                className={`${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'} font-medium`}
+            <span className="px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 font-bold text-xs border border-yellow-500/30">
+              USER PORTAL
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/"
+              className="text-sm font-semibold text-slate-300 hover:text-white transition"
+            >
+              ← Back to Home
+            </Link>
+            {user.email === 'admin@agentra.ai' && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-400 font-bold text-xs hover:bg-red-500/20 transition"
               >
-                Logout
-              </button>
-            </div>
+                Admin Panel ⚡
+              </Link>
+            )}
+            <button
+              onClick={handleLogout}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Page Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 mb-6">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
+        {/* User Hero Header */}
+        <div className="p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-yellow-950/40 border border-yellow-500/30 backdrop-blur-2xl shadow-2xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center space-x-5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-yellow-500 to-orange-500 p-0.5 shadow-lg shadow-orange-500/30">
+              <div className="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center text-3xl font-black text-yellow-400">
+                {user.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
             </div>
-            <h1 className="text-5xl font-black bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent mb-4">Your Profile</h1>
-            <p className={`text-xl ${isDarkMode ? 'text-slate-300' : 'text-gray-700'} max-w-2xl mx-auto`}>Manage your account information and preferences</p>
+            <div>
+              <h1 className="text-3xl font-black text-white flex items-center gap-2">
+                {user.name}
+                <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-semibold">
+                  ACTIVE USER
+                </span>
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">{user.email} {user.company ? `• ${user.company}` : ''}</p>
+            </div>
           </div>
 
-          {/* Profile Card */}
-          <div className={`${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-yellow-200'} backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2`}>
-            {/* Error and Success Messages */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"
-              >
-                {error}
-              </motion.div>
-            )}
-            
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg"
-              >
-                {success}
-              </motion.div>
-            )}
+          {/* Quick Stats */}
+          <div className="grid grid-cols-3 gap-3 w-full md:w-auto text-center">
+            <div className="p-3 rounded-2xl bg-slate-800/80 border border-yellow-500/20">
+              <span className="text-xs text-slate-400 block">Saved Chats</span>
+              <span className="text-xl font-bold text-yellow-400">{chatHistory.length}</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-800/80 border border-yellow-500/20">
+              <span className="text-xs text-slate-400 block">AI Voice</span>
+              <span className="text-xl font-bold text-green-400">Maya 3D</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-800/80 border border-yellow-500/20">
+              <span className="text-xs text-slate-400 block">Status</span>
+              <span className="text-xl font-bold text-orange-400">Pro</span>
+            </div>
+          </div>
+        </div>
 
-            {/* Profile Form */}
-            <form onSubmit={handleUpdateProfile} className="space-y-6">
-              {/* Email (Read-only) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                                 <input
-                   type="email"
-                   value={user.email}
-                   disabled
-                   className={`w-full px-4 py-3 border rounded-lg cursor-not-allowed ${
-                     isDarkMode 
-                       ? 'bg-slate-700 border-slate-600 text-slate-400' 
-                       : 'bg-gray-50 border-gray-300 text-gray-500'
-                   }`}
-                 />
-                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Email cannot be changed</p>
+        {/* Tab Navigation */}
+        <div className="flex space-x-3 mb-8 border-b border-slate-800 pb-4">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition ${
+              activeTab === 'profile'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-slate-950 shadow-lg shadow-orange-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            👤 Account Profile
+          </button>
+          <button
+            onClick={() => setActiveTab('chats')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition ${
+              activeTab === 'chats'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-slate-950 shadow-lg shadow-orange-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            💬 Chat Logs & Sound Playback
+          </button>
+          <button
+            onClick={() => setActiveTab('voice')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition ${
+              activeTab === 'voice'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-slate-950 shadow-lg shadow-orange-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            🔊 AI Voice & Audio Settings
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="p-8 rounded-3xl bg-slate-900/90 border border-yellow-500/30 backdrop-blur-2xl shadow-xl"
+            >
+              <h2 className="text-xl font-bold text-yellow-400 mb-6">Edit Personal Details</h2>
+              {error && <div className="p-4 mb-4 rounded-xl bg-red-950/60 border border-red-500/50 text-red-300 text-sm">{error}</div>}
+              {success && <div className="p-4 mb-4 rounded-xl bg-green-950/60 border border-green-500/50 text-green-300 text-sm">{success}</div>}
+
+              <form onSubmit={handleUpdateProfile} className="space-y-5 max-w-xl">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-2">Email (Primary)</label>
+                  <input
+                    type="email"
+                    value={user.email}
+                    disabled
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-500 cursor-not-allowed text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 focus:border-yellow-500 text-white text-sm outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Company / Organization</label>
+                  <input
+                    type="text"
+                    value={company}
+                    onChange={e => setCompany(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 focus:border-yellow-500 text-white text-sm outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 font-bold text-slate-950 text-sm shadow-lg hover:from-yellow-400 hover:to-orange-400 transition"
+                >
+                  {loading ? 'Saving...' : 'Save Profile Changes'}
+                </button>
+              </form>
+            </motion.div>
+          )}
+
+          {activeTab === 'chats' && (
+            <motion.div
+              key="chats"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="space-y-4"
+            >
+              <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm flex justify-between items-center">
+                <span>🔊 Click <b>"Listen Audio"</b> on any saved conversation response to hear the AI Girl Assistant speak!</span>
               </div>
 
-              {/* Name */}
-                             <div>
-                 <label htmlFor="name" className={`block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'} mb-2`}>
-                   Full Name *
-                 </label>
-                 <input
-                   id="name"
-                   type="text"
-                   value={name}
-                   onChange={(e) => setName(e.target.value)}
-                   disabled={!isEditing}
-                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                     isDarkMode 
-                       ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' 
-                       : 'border-gray-300'
-                   } ${
-                     !isEditing ? (isDarkMode ? 'bg-slate-800 cursor-not-allowed' : 'bg-gray-50 cursor-not-allowed') : ''
-                   }`}
-                   placeholder="Enter your full name"
-                   required
-                 />
-               </div>
+              {chatHistory.map(item => (
+                <div
+                  key={item.id}
+                  className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-yellow-500/40 transition shadow-lg space-y-4"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-yellow-400 text-sm flex items-center gap-2">
+                      🤖 {item.agentName}
+                    </span>
+                    <span className="text-xs text-slate-500">{item.date}</span>
+                  </div>
 
-              {/* Company */}
-                             <div>
-                 <label htmlFor="company" className={`block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'} mb-2`}>
-                   Company
-                 </label>
-                 <input
-                   id="company"
-                   type="text"
-                   value={company}
-                   onChange={(e) => setCompany(e.target.value)}
-                   disabled={!isEditing}
-                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                     isDarkMode 
-                       ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' 
-                       : 'border-gray-300'
-                   } ${
-                     !isEditing ? (isDarkMode ? 'bg-slate-800 cursor-not-allowed' : 'bg-gray-50 cursor-not-allowed') : ''
-                   }`}
-                   placeholder="Enter your company name"
-                 />
-               </div>
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-300 text-sm">
+                    <span className="text-slate-500 font-bold block mb-1">USER MESSAGE:</span>
+                    {item.message}
+                  </div>
 
-              {/* Account Info */}
-                             <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}>
-                 <div>
-                   <label className={`block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'} mb-2`}>
-                     Account Created
-                   </label>
-                   <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                     {new Date(user.created_at).toLocaleDateString('en-US', {
-                       year: 'numeric',
-                       month: 'long',
-                       day: 'numeric'
-                     })}
-                   </p>
-                 </div>
-                 
-                 <div>
-                   <label className={`block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'} mb-2`}>
-                     Last Login
-                   </label>
-                   <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                     {user.last_login 
-                       ? new Date(user.last_login).toLocaleDateString('en-US', {
-                           year: 'numeric',
-                           month: 'long',
-                           day: 'numeric',
-                           hour: '2-digit',
-                           minute: '2-digit'
-                         })
-                       : 'Never'
-                     }
-                   </p>
-                 </div>
-               </div>
+                  <div className="p-3 rounded-xl bg-slate-800/80 border border-yellow-500/30 text-white text-sm relative">
+                    <span className="text-yellow-400 font-bold block mb-1">AI GIRL RESPONSE:</span>
+                    <p className="leading-relaxed">{item.response}</p>
 
-              {/* Action Buttons */}
-                             <div className={`flex justify-end space-x-4 pt-6 border-t ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}>
-                {!isEditing ? (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={() => playSound(item.response, item.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                          speakingId === item.id
+                            ? 'bg-red-500 text-white animate-pulse'
+                            : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/40'
+                        }`}
+                      >
+                        {speakingId === item.id ? '⏹ Stop Audio' : '🔊 Listen Audio Sound'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {activeTab === 'voice' && (
+            <motion.div
+              key="voice"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="p-8 rounded-3xl bg-slate-900/90 border border-yellow-500/30 backdrop-blur-2xl shadow-xl space-y-6"
+            >
+              <h2 className="text-xl font-bold text-yellow-400">AI Girl Voice & Speech Customization</h2>
+
+              <div className="space-y-4 max-w-xl">
+                <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <div>
+                    <h4 className="font-semibold text-white text-sm">Auto-play Girl Voice Speech</h4>
+                    <p className="text-xs text-slate-400">Automatically read AI responses out loud when chatting</p>
+                  </div>
                   <button
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    onClick={() => setAutoSpeak(!autoSpeak)}
+                    className={`w-12 h-6 rounded-full transition p-1 ${autoSpeak ? 'bg-yellow-500' : 'bg-slate-700'}`}
                   >
-                    Edit Profile
+                    <div className={`w-4 h-4 rounded-full bg-slate-950 transition transform ${autoSpeak ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setName(user.name || '');
-                        setCompany(user.company || '');
-                        setError('');
-                      }}
-                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`px-6 py-2 rounded-lg text-white transition-colors ${
-                        loading
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
-                      }`}
-                    >
-                      {loading ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </>
-                )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Voice Speed ({voiceSpeed}x)</label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.5"
+                    step="0.1"
+                    value={voiceSpeed}
+                    onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
+                    className="w-full accent-yellow-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Voice Pitch ({voicePitch})</label>
+                  <input
+                    type="range"
+                    min="0.8"
+                    max="1.6"
+                    step="0.1"
+                    value={voicePitch}
+                    onChange={e => setVoicePitch(parseFloat(e.target.value))}
+                    className="w-full accent-yellow-500 cursor-pointer"
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => playSound("Hello! This is Maya testing your voice and audio settings.", 'test-voice')}
+                    className="px-5 py-2.5 rounded-xl bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 text-xs font-bold hover:bg-yellow-500/30 transition flex items-center gap-2"
+                  >
+                    🔊 Test Voice Sound Output
+                  </button>
+                </div>
               </div>
-            </form>
-          </div>
-
-          {/* Additional Actions */}
-                     <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className={`${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-yellow-200'} backdrop-blur-md rounded-2xl shadow-xl p-6 border`}>
-               <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Quick Actions</h3>
-               <div className="space-y-3">
-                                  {user?.email === 'admin@agentra.ai' && (
-                    <Link
-                      href="/admin"
-                      className={`block w-full text-left px-4 py-3 border rounded-lg transition-colors ${
-                        isDarkMode 
-                          ? 'border-slate-600 hover:bg-slate-700' 
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <svg className={`w-5 h-5 mr-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>Admin Panel</span>
-                      </div>
-                    </Link>
-                  )}
-               </div>
-             </div>
-
-             <div className={`${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-yellow-200'} backdrop-blur-md rounded-2xl shadow-xl p-6 border`}>
-               <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Account Status</h3>
-               <div className="space-y-3">
-                 <div className="flex items-center justify-between">
-                   <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Email Verified</span>
-                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                     user.is_verified 
-                       ? 'bg-green-100 text-green-700' 
-                       : 'bg-yellow-100 text-yellow-700'
-                   }`}>
-                     {user.is_verified ? 'Verified' : 'Pending'}
-                   </span>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <span className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Account Type</span>
-                   <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Standard</span>
-                 </div>
-               </div>
-             </div>
-           </div>
-        </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
-} 
+}

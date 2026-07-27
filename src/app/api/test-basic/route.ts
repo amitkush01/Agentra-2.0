@@ -6,17 +6,21 @@ export async function GET() {
     console.log('Basic test starting...');
     
     // Try to get database
-    const db = getDatabase();
+    const db = await getDatabase();
     console.log('Database connection successful');
     
     // Test a simple query
-    const result = db.prepare('SELECT COUNT(*) as count FROM users').get();
+    const result: any = await new Promise((resolve, reject) => {
+      db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     console.log('User count result:', result);
     
     return NextResponse.json({
       success: true,
       message: 'Basic test successful',
-      userCount: (result as any).count
+      userCount: (result as any)?.count || 0
     });
     
   } catch (error) {
@@ -26,4 +30,4 @@ export async function GET() {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}

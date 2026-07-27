@@ -500,8 +500,16 @@ export default function AdminPage() {
       
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 shadow-sm">
-          <div className="p-4 border-b border-slate-700">
-            <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+          <div className="p-4 border-b border-slate-700 flex items-center gap-3">
+            <img src="/images/logo.png" alt="Agentra Logo" className="w-9 h-9 object-contain rounded-xl border border-yellow-500/40 shadow-lg" />
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-xl tracking-wider uppercase bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
+                AGENTRA
+              </span>
+              <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-gradient-to-r from-yellow-400 to-orange-500 text-slate-950 tracking-widest border border-yellow-300/40 uppercase">
+                ADMIN
+              </span>
+            </div>
           </div>
           <nav className="flex-1">
             {['Agents', 'Messages', 'Videos', 'Settings'].map(item => (

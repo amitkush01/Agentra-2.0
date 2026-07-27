@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Create user without hashing password (for testing)
     console.log('Attempting to create user...');
-    const result = await userOperations.create(email, name, password, company);
+    const result: any = await userOperations.create(email, name, password, company);
 
     console.log('Signup result:', result);
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the created user
-    const newUser = await userOperations.getById(result.id);
+    const newUser: any = await userOperations.getById(result.id);
     
     if (!newUser) {
       throw new Error('Failed to retrieve created user');

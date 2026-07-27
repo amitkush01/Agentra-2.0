@@ -7,18 +7,18 @@ export async function GET() {
     
     // Test getAll
     console.log('Testing getAll...');
-    const allUsers = userOperations.getAll();
+    const allUsers: any = await userOperations.getAll();
     console.log('All users result:', allUsers);
     
     // Test getByEmail with a test email
     console.log('Testing getByEmail...');
-    const testUser = userOperations.getByEmail('test@example.com');
+    const testUser = await userOperations.getByEmail('test@example.com');
     console.log('Test user lookup result:', testUser);
     
     return NextResponse.json({
       success: true,
       message: 'UserOperations test successful',
-      allUsersCount: allUsers.length,
+      allUsersCount: Array.isArray(allUsers) ? allUsers.length : 0,
       testUserFound: !!testUser
     });
     
@@ -29,4 +29,4 @@ export async function GET() {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}

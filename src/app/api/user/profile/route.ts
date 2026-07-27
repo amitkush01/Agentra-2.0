@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userOperations } from '@/lib/database';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('user-id');
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = userOperations.getById(parseInt(userId));
+    const user = await userOperations.getById(parseInt(userId));
     
     if (!user) {
       return NextResponse.json(
@@ -58,7 +60,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const result = userOperations.updateProfile(parseInt(userId), { name, company });
+    const result: any = await userOperations.updateProfile(parseInt(userId), { name, company });
     
     if (!result.changes) {
       return NextResponse.json(
@@ -68,7 +70,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get updated user
-    const updatedUser = userOperations.getById(parseInt(userId));
+    const updatedUser = await userOperations.getById(parseInt(userId));
     
     if (!updatedUser) {
       return NextResponse.json(
@@ -78,11 +80,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Return updated user data without password
-    const { password: _, ...userData } = updatedUser as any;
+    const { password: __, ...updatedUserData } = updatedUser as any;
     
     return NextResponse.json({
       success: true,
-      user: userData,
+      user: updatedUserData,
       message: 'Profile updated successfully'
     });
 

@@ -5,16 +5,31 @@ export async function GET() {
   try {
     console.log('Fixing database schema...');
     
-    const db = getDatabase();
+    const db = await getDatabase();
     
     // First, let's check what tables exist
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+    const tables: any = await new Promise((resolve, reject) => {
+      db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, rows) => {
+        if (err) reject(err); else resolve(rows);
+      });
+    });
     console.log('Existing tables:', tables);
     
     // Check if users table exists and its current schema
-    const usersTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+    const usersTable = await new Promise((resolve, reject) => {
+      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
+
+    let finalSchema: any = [];
+
     if (usersTable) {
-      const usersSchema = db.prepare("PRAGMA table_info(users)").all();
+      const usersSchema: any = await new Promise((resolve, reject) => {
+        db.all("PRAGMA table_info(users)", (err, rows) => {
+          if (err) reject(err); else resolve(rows);
+        });
+      });
       console.log('Current users table schema:', usersSchema);
       
       const existingColumns = usersSchema.map((col: any) => col.name);
@@ -37,7 +52,11 @@ export async function GET() {
         if (!existingColumns.includes(column.name)) {
           console.log(`Adding missing column: ${column.name}`);
           try {
-            db.exec(column.sql);
+            await new Promise((resolve, reject) => {
+              db.run(column.sql, (err) => {
+                if (err) reject(err); else resolve(true);
+              });
+            });
             console.log(`Column ${column.name} added successfully`);
           } catch (error) {
             console.log(`Column ${column.name} already exists or error:`, error);
@@ -49,50 +68,78 @@ export async function GET() {
     } else {
       // Create users table if it doesn't exist
       console.log('Creating users table...');
-      db.exec(`
-        CREATE TABLE users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL,
-          name TEXT NOT NULL,
-          password TEXT,
-          company TEXT,
-          provider TEXT DEFAULT 'email',
-          provider_id TEXT,
-          avatar_url TEXT,
-          is_verified BOOLEAN DEFAULT 0,
-          last_login DATETIME,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
+      await new Promise((resolve, reject) => {
+        db.exec(`
+          CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            password TEXT,
+            company TEXT,
+            provider TEXT DEFAULT 'email',
+            provider_id TEXT,
+            avatar_url TEXT,
+            is_verified BOOLEAN DEFAULT 0,
+            last_login DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `, (err) => {
+          if (err) reject(err); else resolve(true);
+        });
+      });
       console.log('Users table created successfully');
     }
     
     // Get final schema
-    const finalSchema = db.prepare("PRAGMA table_info(users)").all();
+    finalSchema = await new Promise((resolve, reject) => {
+      db.all("PRAGMA table_info(users)", (err, rows) => {
+        if (err) reject(err); else resolve(rows);
+      });
+    });
     console.log('Final users table schema:', finalSchema);
     
     // Test inserting a user
     console.log('Testing user insertion...');
-    const testResult = db.prepare('INSERT INTO users (email, name, password, company, provider) VALUES (?, ?, ?, ?, ?)').run('test@test.com', 'Test User', 'testpass', 'Test Company', 'email');
+    const testResult: any = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO users (email, name, password, company, provider) VALUES (?, ?, ?, ?, ?)',
+        ['test@test.com', 'Test User', 'testpass', 'Test Company', 'email'],
+        function(err) {
+          if (err) reject(err); else resolve({ id: this.lastID, changes: this.changes });
+        }
+      );
+    });
     
     console.log('Test insert result:', testResult);
     
     // Get the test user
-    const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@test.com');
+    const testUser = await new Promise((resolve, reject) => {
+      db.get('SELECT * FROM users WHERE email = ?', ['test@test.com'], (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     console.log('Test user retrieved:', testUser);
     
     // Delete the test user
-    db.prepare('DELETE FROM users WHERE email = ?').run('test@test.com');
+    await new Promise((resolve, reject) => {
+      db.run('DELETE FROM users WHERE email = ?', ['test@test.com'], (err) => {
+        if (err) reject(err); else resolve(true);
+      });
+    });
     console.log('Test user deleted');
     
     // Get final user count
-    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
+    const userCount: any = await new Promise((resolve, reject) => {
+      db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     
     return NextResponse.json({
       success: true,
       message: 'Database schema fixed successfully',
-      testInsertWorked: !!testResult.lastInsertRowid,
+      testInsertWorked: !!testResult.id,
       testUserRetrieved: !!testUser,
       finalUserCount: (userCount as any).count,
       existingTables: tables.map((t: any) => t.name),
@@ -106,4 +153,4 @@ export async function GET() {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}

@@ -3,29 +3,47 @@ import { getDatabase } from '@/lib/database';
 
 export async function GET() {
   try {
-    const db = getDatabase();
+    const db = await getDatabase();
     
     // Check if users table exists
-    const tableExists = db.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='users'
-    `).get();
+    const tableExists = await new Promise((resolve, reject) => {
+      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     
     if (!tableExists) {
+      const tables = await new Promise((resolve, reject) => {
+        db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, rows) => {
+          if (err) reject(err); else resolve(rows);
+        });
+      });
       return NextResponse.json({
         error: 'Users table does not exist',
-        tables: db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
+        tables
       });
     }
     
     // Get table schema
-    const schema = db.prepare("PRAGMA table_info(users)").all();
+    const schema = await new Promise((resolve, reject) => {
+      db.all("PRAGMA table_info(users)", (err, rows) => {
+        if (err) reject(err); else resolve(rows);
+      });
+    });
     
     // Get user count
-    const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get();
+    const userCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
+        if (err) reject(err); else resolve(row);
+      });
+    });
     
     // Get all users (without passwords)
-    const users = db.prepare("SELECT id, email, name, company, is_verified, created_at, last_login FROM users").all();
+    const users = await new Promise((resolve, reject) => {
+      db.all("SELECT id, email, name, company, is_verified, created_at, last_login FROM users", (err, rows) => {
+        if (err) reject(err); else resolve(rows);
+      });
+    });
     
     return NextResponse.json({
       success: true,
@@ -42,4 +60,4 @@ export async function GET() {
       message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}
