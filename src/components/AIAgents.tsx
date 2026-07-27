@@ -24,21 +24,53 @@ interface AIAgentsProps {
   setIsHovering: (value: boolean) => void;
 }
 
+const FALLBACK_AGENTS_CLIENT: Agent[] = [
+  {
+    id: 1,
+    name: 'Marketing AI Agent 1',
+    type: 'marketing',
+    photo_url: '/images/ai_agent_3d_marketing.png',
+    description: 'Advanced marketing automation agent for lead generation, ad campaign management, and content creation.',
+    status: 'active',
+    key_value: 'Saves 150+ hours per month with 45% ROI boost',
+    features: 'Lead generation, Campaign automation, Analytics tracking, Social media management, Email marketing, ROI optimization',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    name: 'Sales AI Agent 2',
+    type: 'sales',
+    photo_url: '/images/ai_agent_3d_sales.png',
+    description: 'Intelligent 24/7 sales assistant that qualifies leads, handles follow-ups, and guides prospects through deals.',
+    status: 'active',
+    key_value: 'Increases sales conversion rate by 40%',
+    features: 'Lead qualification, Automated follow-ups, CRM integration, Sales forecasting, Customer insights, Deal tracking',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
 export default function AIAgents({ isDarkMode, isMobile, isHovering, setIsHovering }: AIAgentsProps) {
   const router = useRouter();
   const textClass = isDarkMode ? 'text-white' : 'text-orange-900';
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [agents, setAgents] = useState<Agent[]>(FALLBACK_AGENTS_CLIENT);
+  const [loading, setLoading] = useState(false);
 
   const loadAgents = () => {
     fetch('/api/agents')
       .then(res => res.json())
       .then(data => {
-        setAgents(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setAgents(data);
+        } else {
+          setAgents(FALLBACK_AGENTS_CLIENT);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Error loading agents:', err);
+        setAgents(FALLBACK_AGENTS_CLIENT);
         setLoading(false);
       });
   };

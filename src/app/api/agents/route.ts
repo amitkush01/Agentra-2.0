@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { agentOperations } from '@/lib/database';
+import { DEFAULT_VERCEL_AGENTS } from '@/lib/defaultAgents';
 
 export async function GET() {
   try {
     const agents = await agentOperations.getAll();
-    // Ensure we always return an array
-    if (Array.isArray(agents)) {
+    if (Array.isArray(agents) && agents.length > 0) {
       return NextResponse.json(agents);
-    } else {
-      console.error('Agents data is not an array:', agents);
-      return NextResponse.json([]);
     }
+    return NextResponse.json(DEFAULT_VERCEL_AGENTS);
   } catch (error) {
     console.error('Agents API error:', error);
-    return NextResponse.json([]);
+    return NextResponse.json(DEFAULT_VERCEL_AGENTS);
   }
 }
 
@@ -21,7 +19,6 @@ export async function POST(request: NextRequest) {
   try {
     const { name, type, description, config, photoUrl, keyValue, features } = await request.json();
 
-    // Validate required fields
     if (!name || !type) {
       return NextResponse.json(
         { error: 'Name and type are required' },
@@ -29,13 +26,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, use a default user ID (1) - in a real app, this would come from authentication
     const userId = 1;
+    let resultId = Date.now();
     
-    const result: any = await agentOperations.create(userId, name, type, description, config, photoUrl, keyValue, features);
+    try {
+      const result: any = await agentOperations.create(userId, name, type, description, config, photoUrl, keyValue, features);
+      if (result && result.id) resultId = result.id;
+    } catch (e) {
+      console.log('Database read-only fallback mode active');
+    }
 
     const newAgent = {
-      id: result.id,
+      id: resultId,
       name,
       type,
       description,
