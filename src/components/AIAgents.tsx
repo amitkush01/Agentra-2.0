@@ -99,6 +99,8 @@ export default function AIAgents({ isDarkMode, isMobile, isHovering, setIsHoveri
     router.push(`/agents/${agentId}`);
   };
 
+  const displayAgents = (Array.isArray(agents) && agents.length > 0) ? agents : FALLBACK_AGENTS_CLIENT;
+
   return (
     <section id="agents" className="py-12 md:py-16 lg:py-20 max-w-7xl mx-auto px-4 sm:px-6">
       {/* Section Heading */}
@@ -120,14 +122,15 @@ export default function AIAgents({ isDarkMode, isMobile, isHovering, setIsHoveri
                    <p className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium ${isDarkMode ? 'text-slate-300' : 'text-orange-700'} max-w-4xl mx-auto mb-6 md:mb-8 px-4`}>
              Discover our portfolio of specialized AI agents designed for different business domains. Each agent is customized to deliver maximum efficiency and results for your specific industry needs.
            </p>
-        <div className="flex justify-center items-center space-x-4 text-sm text-gray-500">
-          <span className="flex items-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-            Active ({agents.filter(a => a.status === 'active').length})
-          </span>
-          <span className="flex items-center">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-            Ready to Launch ({agents.filter(a => a.status === 'ready').length})
+        <p className={`text-base sm:text-lg md:text-xl ${isDarkMode ? 'text-slate-300' : 'text-slate-600'} max-w-2xl mx-auto`}>
+          Deploy pre-configured, domain-specific AI agents that automate complex workflows and drive measurable results.
+        </p>
+
+        {/* Status indicator */}
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+          <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+            Ready to Launch ({displayAgents.length} Active Agents)
           </span>
           <button
             onClick={loadAgents}
@@ -145,27 +148,13 @@ export default function AIAgents({ isDarkMode, isMobile, isHovering, setIsHoveri
       {loading ? (
         <div className="flex justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
             <p className={`${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Loading agents...</p>
           </div>
         </div>
-      ) : agents.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-            No Agents Available
-          </h3>
-          <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} max-w-md mx-auto`}>
-            Our AI agents are being prepared. Check back soon to explore our powerful automation solutions!
-          </p>
-        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-6xl mx-auto">
-          {agents.map((agent, index) => (
+          {displayAgents.map((agent, index) => (
       <motion.div
               key={agent.id}
               className={`w-full rounded-2xl shadow-2xl p-6 md:p-8 cursor-pointer ${
